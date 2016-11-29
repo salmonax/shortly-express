@@ -40,10 +40,10 @@ describe('', function() {
       .del()
       .catch(function(error) {
         // uncomment when writing authentication tests
-        // throw {
-        //   type: 'DatabaseError',
-        //   message: 'Failed to create test setup data'
-        // };
+        throw {
+          type: 'DatabaseError',
+          message: 'Failed to create test setup data'
+        };
       });
 
     // delete user Phillip from db so it can be created later for the test
@@ -52,10 +52,10 @@ describe('', function() {
       .del()
       .catch(function(error) {
         // uncomment when writing authentication tests
-        // throw {
-        //   type: 'DatabaseError',
-        //   message: 'Failed to create test setup data'
-        // };
+        throw {
+          type: 'DatabaseError',
+          message: 'Failed to create test setup data'
+        };
       });
   });
 
@@ -114,6 +114,7 @@ describe('', function() {
 
       it('Responds with the short code', function(done) {
         requestWithSession(options, function(error, res, body) {
+          console.log(res.body);
           expect(res.body.url).to.equal('http://roflzoo.com/');
           expect(res.body.code).to.not.be.null;
           done();
@@ -385,13 +386,21 @@ describe('', function() {
           'uri': 'http://127.0.0.1:4568/'
         };
         requestWithSession(options, function(error, res, body) {
-          console.log(res.headers);
           expect(res.req.path).to.equal('/login');
           done();
         });
       });
     });
-    xit('Redirects to the login page after logout');
+    it('Redirects to the login page after logout', function(done) {
+      var options = {
+        'method': 'GET',
+        'uri': 'http://127.0.0.1:4568/logout'
+      };
+      requestWithSession(options, function(error, res, body) {
+        expect(res.req.path).to.equal('/login');
+        done();
+      });
+    });
 
   });
 

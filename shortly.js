@@ -25,7 +25,7 @@ app.use(express.static(__dirname + '/public'));
 app.use( session({
   secret: 'nyancat',
   cookie: {
-    maxAge: 60000
+    maxAge: 600000
   }
 }) );
 
@@ -61,41 +61,62 @@ function(req, res) {
 
 app.get('/links', checkLogin,
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
+  var username = req.session.user;
+  new User({ username: username }).fetch()
+  .then(function(user) {
+    user.links().fetch().then(function(links) { 
+      res.status(200).send(links.models);
+    });
   });
+
+  // Links.reset().fetch().then(function(links) {
+  //   // console.log('Links models: ', links.models);
+  //   res.status(200).send(links.models);
+  // });
 });
 
 app.post('/links', checkLogin,
 function(req, res) {
   var uri = req.body.url;
+  var username = req.session.user;
 
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
     return res.sendStatus(404);
   }
+  new User({ username: username }).fetch()
+  .then(function(user) {
 
-  new Link({ url: uri }).fetch().then(function(found) {
-    if (found) {
-      res.status(200).send(found.attributes);
-    } else {
-      util.getUrlTitle(uri, function(err, title) {
-        if (err) {
-          console.log('Error reading URL heading: ', err);
-          return res.sendStatus(404);
-        }
+    new Link({ url: uri }).fetch().then(function(link) {
+      if (link) {
+        user.links().attach(link);
+        // attach link to user
+        res.status(200).send(link.attributes);
+      } else {
+        util.getUrlTitle(uri, function(err, title) {
+          if (err) {
+            console.log('Error reading URL heading: ', err);
+            return res.sendStatus(404);
+          }
 
-        Links.create({
-          url: uri,
-          title: title,
-          baseUrl: req.headers.origin
-        })
-        .then(function(newLink) {
-          res.status(200).send(newLink);
+          Links.create({
+            url: uri,
+            title: title,
+            baseUrl: req.headers.origin
+          })
+          .then(function(newLink) {
+            // attach link to user
+            console.log('in post', user.links());
+            user.links().attach(newLink);
+            res.status(200).send(newLink);
+          });
         });
-      });
-    }
+      }
+    });
+
   });
+
+  
 });
 
 /************************************************************/
