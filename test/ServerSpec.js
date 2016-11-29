@@ -238,7 +238,7 @@ describe('', function() {
 
   }); // 'Priviledged Access'
 
-  xdescribe('Account Creation:', function() {
+  describe('Account Creation:', function() {
 
     it('Signup creates a user record', function(done) {
       var options = {
@@ -286,7 +286,7 @@ describe('', function() {
 
   }); // 'Account Creation'
 
-  xdescribe('Account Login:', function() {
+  describe('Account Login:', function() {
 
     var requestWithSession = request.defaults({jar: true});
 
@@ -331,6 +331,68 @@ describe('', function() {
       });
     });
 
+    it('Requires the correct password to log in', function(done) {
+      var options = {
+        'method': 'POST',
+        'uri': 'http://127.0.0.1:4568/login',
+        'json': {
+          'username': 'Phillip',
+          'password': 'ThisPasswordIsWrong'
+        }
+      };
+      requestWithSession(options, function(error, res, body) {
+        expect(res.headers.location).to.equal('/login');
+        done();
+      });
+    });
+    
   }); // 'Account Login'
+
+  describe('Account Logout:', function() {
+    var requestWithSession = request.defaults({jar: true});
+
+    beforeEach(function(done) {
+      // create a user that we can then log-in with
+      new User({
+        'username': 'Phillip',
+        'password': 'Phillip'
+      }).save().then(function() {
+        var options = {
+          'method': 'POST',
+          'followAllRedirects': true,
+          'uri': 'http://127.0.0.1:4568/login',
+          'json': {
+            'username': 'Phillip',
+            'password': 'Phillip'
+          }
+        };
+        // login via form and save session info
+        requestWithSession(options, function(error, res, body) {
+          done();
+        });
+      });
+    });
+
+    it('Prevents access to main page after logout', function(done) {
+      var options = {
+        'method': 'GET',
+        'uri': 'http://127.0.0.1:4568/logout'
+      };
+
+      requestWithSession(options, function(error, res, body) {
+        var options = {
+          'method': 'GET',
+          'uri': 'http://127.0.0.1:4568/'
+        };
+        requestWithSession(options, function(error, res, body) {
+          console.log(res.headers);
+          expect(res.req.path).to.equal('/login');
+          done();
+        });
+      });
+    });
+    xit('Redirects to the login page after logout');
+
+  });
 
 });

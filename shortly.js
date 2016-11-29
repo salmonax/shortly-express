@@ -30,7 +30,7 @@ app.use( session({
 }) );
 
 var checkLogin = function (req, res, next) {
-  console.log('session: ', req.session);
+  //console.log('session: ', req.session);
   if (req.session.user) {
     console.log('USER LOGGED IN!');
     next();
@@ -77,7 +77,6 @@ function(req, res) {
 
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
-      console.log('fetch happened');
       res.status(200).send(found.attributes);
     } else {
       util.getUrlTitle(uri, function(err, title) {
@@ -133,12 +132,29 @@ app.post('/login', function (req, res) {
 
   new User({username: username}).fetch().then(function(user) {
     if (user) {
-      req.session.user = username;
-      res.redirect('/');
+      user.compare(password)
+      .then( function(matches) {
+        if (matches) {
+          req.session.user = username;
+          res.redirect('/');
+        } else {
+          console.log('Password does not match');
+          res.redirect('/login');
+        }
+      });
     } else {
-      res.redirect('/signup');
+      console.log('User does not exist');
+      res.redirect('/login');
     }
   });
+});
+
+app.get('/logout', function (req, res) {
+  if (req.session.user) {
+    req.session.destroy(function(err) {
+      res.redirect('/login');
+    });
+  }
 });
 
 /************************************************************/
