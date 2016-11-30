@@ -24,6 +24,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 app.use( session({
   secret: 'nyancat',
+  resave: false,
+  saveUninitialized: false,
   cookie: {
     maxAge: 600000
   }
@@ -32,7 +34,7 @@ app.use( session({
 var checkLogin = function (req, res, next) {
   //console.log('session: ', req.session);
   if (req.session.user) {
-    console.log('USER LOGGED IN!');
+    // console.log('USER LOGGED IN!');
     next();
   } else {
     req.session.error = 'Access denied!';
@@ -50,7 +52,6 @@ app.get('/signup', function (req, res) {
 
 app.get('/', checkLogin,
 function(req, res) {
-  console.log('render index');
   res.render('index');
 });
 
@@ -64,9 +65,10 @@ function(req, res) {
   var username = req.session.user;
   new User({ username: username }).fetch()
   .then(function(user) {
-    user.links().fetch().then(function(links) { 
-      res.status(200).send(links.models);
-    });
+    return user.links().fetch();
+  })
+  .then(function(links) { 
+    res.status(200).send(links.models);
   });
 
   // Links.reset().fetch().then(function(links) {
@@ -80,10 +82,15 @@ function(req, res) {
   var uri = req.body.url;
   var username = req.session.user;
 
+  if (username === undefined) {
+    res.sendStatus(404);
+  }
+
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
     return res.sendStatus(404);
   }
+
   new User({ username: username }).fetch()
   .then(function(user) {
 
@@ -106,7 +113,6 @@ function(req, res) {
           })
           .then(function(newLink) {
             // attach link to user
-            console.log('in post', user.links());
             user.links().attach(newLink);
             res.status(200).send(newLink);
           });
@@ -173,7 +179,7 @@ app.post('/login', function (req, res) {
 app.get('/logout', function (req, res) {
   if (req.session.user) {
     req.session.destroy(function(err) {
-      res.redirect('/login');
+      res.render('logout');
     });
   }
 });
