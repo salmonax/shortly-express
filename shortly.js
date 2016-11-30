@@ -43,7 +43,7 @@ var checkLogin = function (req, res, next) {
 };
 
 app.get('/login', function (req, res) {
-  res.render('login');
+  res.render('login', {error: ''});
 });
 
 app.get('/signup', function (req, res) {
@@ -166,12 +166,16 @@ app.post('/login', function (req, res) {
           res.redirect('/');
         } else {
           console.log('Password does not match');
-          res.redirect('/login');
+          res.render('login', {
+            error: 'Password does not match'
+          });
         }
       });
     } else {
       console.log('User does not exist');
-      res.redirect('/login');
+      res.render('login', {
+        error: 'User does not exist'
+      });
     }
   });
 });
